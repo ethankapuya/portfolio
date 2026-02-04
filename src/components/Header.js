@@ -18,13 +18,13 @@ export default function Header() {
                 <div className="link-groups">
                     <div className="link-group">
                         <span className="group-title">Social:</span>
-                        <a className="link-item" href="https://github.com" target="_blank">
+                        <a className="link-item" href="https://github.com/ethankapuya" target="_blank">
                             GitHub
                         </a>
                         <span>,  </span>
                         <a
                             className="link-item"
-                            href="https://linkedin.com"
+                            href="https://linkedin.com/in/ethankapuya"
                             target="_blank"
                         >
                             LinkedIn
@@ -32,7 +32,7 @@ export default function Header() {
                         <span>,</span>
                         <a
                             className="link-item"
-                            href="https://instagram.com"
+                            href="https://instagram.com/ethankapuya"
                             target="_blank"
                         >
                             Instagram
