@@ -72,6 +72,9 @@ export default function Projects() {
                     <a href="https://github.com/ethankapuya/tensorflow-facemesh-app" target="_blank">
                         GitHub
                     </a>
+                    <a href="https://ethankapuya.github.io/tensorflow-facemesh-app" target="_blank">
+                        Website
+                    </a>
                     <span>2026</span>
                 </div>
             </div>
