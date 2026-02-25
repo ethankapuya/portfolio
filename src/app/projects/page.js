@@ -91,7 +91,7 @@ export default function Projects() {
                     <a href="https://www.loom.com/share/6bdb605ccce74858ae6a3a7765f30b81" target="_blank">
                         Demo
                     </a>
-                    <span>TBD</span>
+                    <span>2026</span>
                 </div>
             </div>
             <div className="card">
