@@ -218,8 +218,13 @@ html, body {
 
 .card-meta {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     font-size: 0.85rem;
+    gap: 2rem;
+}
+
+.card-meta span {
+    margin-left: auto;
 }
 
 .card-meta a {

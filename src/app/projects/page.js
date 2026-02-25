@@ -3,29 +3,6 @@ export default function Projects() {
         <div className="cards">
             <div className="card">
                 <div className="card-header">
-                    <h3>Portfolio Website</h3>
-                    <div className="card-header-tags">
-                        <span className="card-tag">Next.js</span>
-                        <span className="card-tag">Node</span>
-                        <span className="card-tag">JS</span>
-                        <span className="card-tag">React</span>
-                        <span className="card-tag">Git</span>
-                    </div>
-                </div>
-
-                <p className="card-description">
-                    Personal portfolio built with Next.js, with a custom layout system and responsive web design.
-                </p>
-
-                <div className="card-meta">
-                    <a href="https://github.com/ethankapuya/portfolio" target="_blank">
-                        GitHub
-                    </a>
-                    <span>2026</span>
-                </div>
-            </div>
-            <div className="card">
-                <div className="card-header">
                     <h3>React Streaming App</h3>
                     <div className="card-header-tags">
                         <span className="card-tag">Vite</span>
@@ -47,6 +24,12 @@ export default function Projects() {
                     <a href="https://github.com/ethankapuya/react-streaming-app" target="_blank">
                         GitHub
                     </a>
+                    <a href="https://ethan-kapuya-streaming.vercel.app/" target="_blank">
+                        Website
+                    </a>
+                    <a href="https://www.loom.com/share/f4db3bf2e2744b43b2a922f21c608d86" target="_blank">
+                        Demo
+                    </a>
                     <span>2025-2026</span>
                 </div>
             </div>
@@ -54,7 +37,7 @@ export default function Projects() {
                 <div className="card-header">
                     <h3>Tensorflow Facemesh App</h3>
                     <div className="card-header-tags">
-                        <span className="card-tag">Create React App</span>
+                        <span className="card-tag">CRA</span>
                         <span className="card-tag">Node</span>
                         <span className="card-tag">JS</span>
                         <span className="card-tag">React</span>
@@ -75,32 +58,69 @@ export default function Projects() {
                     <a href="https://ethankapuya.github.io/tensorflow-facemesh-app" target="_blank">
                         Website
                     </a>
+                    <a href="https://www.loom.com/share/6d33691924464f79a9fda96bfaf44363">
+                        Demo
+                    </a>
                     <span>2026</span>
                 </div>
             </div>
             <div className="card">
                 <div className="card-header">
-                    <h3>Spotify Clone</h3>
+                    <h3>Simple Social</h3>
                     <div className="card-header-tags">
-                        <span className="card-tag">Fast API</span>
+                        <span className="card-tag">FastAPI</span>
                         <span className="card-tag">Python</span>
-                        <span className="card-tag">Flutter</span>
-                        <span className="card-tag">PostgreSQL</span>
-                        <span className="card-tag">Riverpod</span>
-                        <span className="card-tag">Cloudinary</span>
-                        <span className="card-tag">Hive</span>
+                        <span className="card-tag">SQLite</span>
+                        <span className="card-tag">Streamlit</span>
+                        <span className="card-tag">ImageKit</span>
                     </div>
                 </div>
 
                 <p className="card-description">
-                    An emulation of the Spotify app on Android, with near-identical functionality. Still in the works :)
+                    A minimalistic end-to-end social media web app that lets users globally
+                    create and share posts with captions and media.
                 </p>
 
                 <div className="card-meta">
-                    <a href="https://github.com/ethankapuya/spotify-clone" target="_blank">
+                    <a href="https://github.com/ethankapuya/simplesocial" target="_blank">
                         GitHub
                     </a>
+                    <a href="https://simplesocialweb.streamlit.app" target="_blank">
+                        Website
+                    </a>
+                    <a href="https://www.loom.com/share/6bdb605ccce74858ae6a3a7765f30b81" target="_blank">
+                        Demo
+                    </a>
                     <span>TBD</span>
+                </div>
+            </div>
+            <div className="card">
+                <div className="card-header">
+                    <h3>Portfolio Website</h3>
+                    <div className="card-header-tags">
+                        <span className="card-tag">Next.js</span>
+                        <span className="card-tag">Node</span>
+                        <span className="card-tag">JS</span>
+                        <span className="card-tag">React</span>
+                        <span className="card-tag">Git</span>
+                    </div>
+                </div>
+
+                <p className="card-description">
+                    Personal portfolio built with Next.js, with a custom layout system and responsive web design.
+                </p>
+
+                <div className="card-meta">
+                    <a href="https://github.com/ethankapuya/portfolio" target="_blank">
+                        GitHub
+                    </a>
+                    <a href="https://ethankapuya.vercel.app" target="_blank">
+                        Website
+                    </a>
+                    <a href="https://www.loom.com/share/4fdfb7ee5e074944b157e2bf68fca0c1" target="_blank">
+                        Demo
+                    </a>
+                    <span>2026</span>
                 </div>
             </div>
         </div>
