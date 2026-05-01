@@ -1,7 +1,7 @@
 export default function Resume() {
     return (
         <iframe
-            src="/resume.pdf"
+            src="/api/resume"
             className="pdf-embed"
             title="Resume PDF"
         />

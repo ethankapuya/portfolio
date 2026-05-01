@@ -41,6 +41,58 @@ async function seed() {
 
   console.log("Created project_history table");
 
+  await sql`
+    CREATE TABLE IF NOT EXISTS site_assets (
+      key TEXT PRIMARY KEY,
+      content BYTEA NOT NULL,
+      mime TEXT NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  console.log("Created site_assets table");
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS site_content (
+      key TEXT PRIMARY KEY,
+      content JSONB NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  console.log("Created site_content table");
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS experiences (
+      id SERIAL PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      tags TEXT[] NOT NULL DEFAULT '{}',
+      description TEXT NOT NULL,
+      period VARCHAR(100),
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      updated_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+
+  console.log("Created experiences table");
+
+  // Seed the existing Bearing AI experience if the table is empty
+  const { rows: existingExp } = await sql`SELECT COUNT(*)::int AS n FROM experiences`;
+  if (existingExp[0].n === 0) {
+    await sql`
+      INSERT INTO experiences (title, tags, description, period, sort_order)
+      VALUES (
+        'SWE Internship @ Bearing AI',
+        ${["Jupyter Notebook", "Python", "NumPy", "MatPlotLib"]},
+        ${"A 4-week full-time collaborative programming experience with a data science assignment in a startup environment. I helped develop Bearing AI's port-to-port nautical distance calculation service in Python designed to pass criteria such as compatibility to use-case, accuracy, and configurability, now in use in Bearing AI's maritime ML platforms. Assisted in comparing various external API distances to a pipeline of benchmark distance datasets based on customer data, and integrated these APIs to the maritime ML platforms for a more accurate and complete port-to-port distance service."},
+        'Summer 2024',
+        1
+      )
+    `;
+    console.log("Seeded Bearing AI experience");
+  }
+
   // Seed existing projects
   const existing = [
     {

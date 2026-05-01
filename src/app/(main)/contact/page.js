@@ -1,8 +1,13 @@
-export default function Contact() {
+import { getContact } from "@/lib/contact";
+
+export const dynamic = "force-dynamic";
+
+export default async function Contact() {
+    const content = await getContact();
     return (
         <div>
             <h2>Contact Me</h2>
-            <p>E-mail me at ethankapuya@gmail.com or reach out using the social platforms above.</p>
+            <p className="contact-text">{content.body}</p>
         </div>
     );
 }

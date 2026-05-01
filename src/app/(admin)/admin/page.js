@@ -706,6 +706,556 @@ function LogsView({ project, onBack }) {
   );
 }
 
+// ─── Resume View ────────────────────────────────────────────
+function ResumeView() {
+  const [info, setInfo] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState("");
+  const [previewKey, setPreviewKey] = useState(Date.now());
+
+  const fetchInfo = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/admin/resume");
+    if (res.ok) setInfo(await res.json());
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchInfo();
+  }, [fetchInfo]);
+
+  async function handleUpload(e) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      setError("File must be a PDF");
+      return;
+    }
+    setUploading(true);
+    setError("");
+    try {
+      const data = new FormData();
+      data.append("file", file);
+      const res = await fetch("/api/admin/resume", {
+        method: "POST",
+        body: data,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Upload failed");
+      }
+      await fetchInfo();
+      setPreviewKey(Date.now());
+    } catch (err) {
+      setError(err.message);
+    }
+    setUploading(false);
+  }
+
+  return (
+    <div className="admin-section">
+      <h1>Resume</h1>
+      <p className="admin-subtext">
+        Upload a PDF to replace the resume shown on /resume.
+      </p>
+
+      <div className="admin-form">
+        <label>
+          Upload new PDF
+          <input
+            type="file"
+            accept="application/pdf"
+            onChange={handleUpload}
+            disabled={uploading}
+          />
+        </label>
+        {uploading && <p className="admin-subtext">Uploading...</p>}
+        {error && <p className="admin-error">{error}</p>}
+        {!loading && info && (
+          <p className="admin-subtext">
+            {info.exists
+              ? `Current: ${(info.size / 1024).toFixed(1)} KB · updated ${new Date(info.updated_at).toLocaleString()}`
+              : "No upload yet — serving the bundled default."}
+          </p>
+        )}
+      </div>
+
+      <iframe
+        key={previewKey}
+        src="/api/resume"
+        title="Resume preview"
+        className="admin-resume-preview"
+      />
+    </div>
+  );
+}
+
+// ─── About View ─────────────────────────────────────────────
+const ABOUT_FIELDS = [
+  { key: "about", label: "About Me", rows: 3 },
+  { key: "currently", label: "Currently", rows: 4 },
+  { key: "previous_education", label: "Previous Education", rows: 2 },
+  { key: "interests", label: "Interests", rows: 4 },
+];
+
+function AboutView() {
+  const [form, setForm] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [savedAt, setSavedAt] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/admin/about")
+      .then((res) => res.json())
+      .then((data) => {
+        setForm(data);
+        setLoading(false);
+      });
+  }, []);
+
+  async function handleSave() {
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/about", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Save failed");
+      }
+      setSavedAt(new Date());
+    } catch (err) {
+      setError(err.message);
+    }
+    setSaving(false);
+  }
+
+  if (loading || !form) {
+    return (
+      <div className="admin-section">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-section">
+      <h1>About</h1>
+      <p className="admin-subtext">
+        Edit the text shown on the homepage. Section headings and order are
+        fixed.
+      </p>
+
+      <div className="admin-form">
+        {ABOUT_FIELDS.map(({ key, label, rows }) => (
+          <label key={key}>
+            {label}
+            <textarea
+              rows={rows}
+              value={form[key] ?? ""}
+              onChange={(e) => setForm({ ...form, [key]: e.target.value })}
+            />
+          </label>
+        ))}
+
+        {error && <p className="admin-error">{error}</p>}
+
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <button className="admin-btn" onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save"}
+          </button>
+          {savedAt && (
+            <span className="admin-subtext">
+              Saved {savedAt.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Experience Views ───────────────────────────────────────
+function ExperienceListView({ onAdd, onEdit, onReorder }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchItems = useCallback(async () => {
+    setLoading(true);
+    const res = await fetch("/api/admin/experience");
+    if (res.ok) setItems(await res.json());
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchItems();
+  }, [fetchItems]);
+
+  async function handleDelete(item) {
+    if (!confirm(`Delete "${item.title}"?`)) return;
+    await fetch(`/api/admin/experience/${item.id}`, { method: "DELETE" });
+    await fetchItems();
+  }
+
+  if (loading) {
+    return (
+      <div className="admin-section">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-section">
+      <div className="admin-header">
+        <h1>Experience</h1>
+        <div className="admin-header-actions">
+          {items.length > 1 && (
+            <button
+              className="admin-btn admin-btn-secondary"
+              onClick={onReorder}
+            >
+              Reorder
+            </button>
+          )}
+          <button className="admin-btn" onClick={onAdd}>
+            + Add Experience
+          </button>
+        </div>
+      </div>
+
+      {items.length === 0 ? (
+        <p className="admin-subtext">No experiences yet. Click + Add Experience.</p>
+      ) : (
+        <table className="admin-table admin-experience-table">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Period</th>
+              <th>Tags</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((e) => (
+              <tr key={e.id}>
+                <td>{e.title}</td>
+                <td>{e.period || "—"}</td>
+                <td className="admin-subtext">{(e.tags || []).join(", ")}</td>
+                <td>
+                  <div className="admin-actions">
+                    <button className="admin-btn-sm" onClick={() => onEdit(e)}>
+                      Edit
+                    </button>
+                    <button
+                      className="admin-btn-sm admin-btn-danger"
+                      onClick={() => handleDelete(e)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  );
+}
+
+function ExperienceFormView({ initial, onBack, onSaved }) {
+  const isEdit = !!initial;
+  const [form, setForm] = useState(
+    initial || { title: "", tags: [], description: "", period: "" }
+  );
+  const [tagInput, setTagInput] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  function handleTagKeyDown(e) {
+    if (e.key === "Enter" && tagInput.trim()) {
+      e.preventDefault();
+      setForm({ ...form, tags: [...form.tags, tagInput.trim()] });
+      setTagInput("");
+    }
+  }
+
+  function removeTag(index) {
+    setForm({ ...form, tags: form.tags.filter((_, i) => i !== index) });
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    setError("");
+    try {
+      const url = isEdit
+        ? `/api/admin/experience/${initial.id}`
+        : "/api/admin/experience";
+      const res = await fetch(url, {
+        method: isEdit ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Save failed");
+      }
+      onSaved();
+    } catch (err) {
+      setError(err.message);
+    }
+    setSaving(false);
+  }
+
+  return (
+    <div className="admin-section">
+      <button className="admin-btn admin-btn-secondary" onClick={onBack}>
+        &larr; Back
+      </button>
+      <h2>{isEdit ? `Edit: ${initial.title}` : "Add Experience"}</h2>
+
+      <div className="admin-form">
+        <label>
+          Title
+          <input
+            type="text"
+            value={form.title}
+            onChange={(e) => setForm({ ...form, title: e.target.value })}
+            placeholder="SWE Internship @ Bearing AI"
+          />
+        </label>
+
+        <label>
+          Tags (press Enter to add)
+          <div className="admin-tags-editor">
+            {form.tags.map((tag, i) => (
+              <span key={i} className="admin-tag">
+                {tag}
+                <button type="button" onClick={() => removeTag(i)}>
+                  &times;
+                </button>
+              </span>
+            ))}
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={handleTagKeyDown}
+              placeholder="Add tag..."
+              className="admin-tag-input"
+            />
+          </div>
+        </label>
+
+        <label>
+          Description
+          <textarea
+            rows={8}
+            value={form.description}
+            onChange={(e) => setForm({ ...form, description: e.target.value })}
+          />
+        </label>
+
+        <label>
+          Period
+          <input
+            type="text"
+            value={form.period || ""}
+            onChange={(e) => setForm({ ...form, period: e.target.value })}
+            placeholder="Summer 2024"
+          />
+        </label>
+
+        {error && <p className="admin-error">{error}</p>}
+
+        <button className="admin-btn" onClick={handleSave} disabled={saving}>
+          {saving ? "Saving..." : isEdit ? "Save Changes" : "Add Experience"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ExperienceReorderView({ onBack }) {
+  const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/experience")
+      .then((res) => res.json())
+      .then((data) => {
+        setItems(data);
+        setLoading(false);
+      });
+  }, []);
+
+  function moveUp(index) {
+    if (index === 0) return;
+    const next = [...items];
+    [next[index - 1], next[index]] = [next[index], next[index - 1]];
+    setItems(next);
+  }
+
+  function moveDown(index) {
+    if (index === items.length - 1) return;
+    const next = [...items];
+    [next[index], next[index + 1]] = [next[index + 1], next[index]];
+    setItems(next);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    await Promise.all(
+      items.map((item, i) =>
+        fetch(`/api/admin/experience/${item.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sort_order: i + 1 }),
+        })
+      )
+    );
+    setSaving(false);
+    onBack();
+  }
+
+  if (loading) {
+    return (
+      <div className="admin-section">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-section">
+      <button className="admin-btn admin-btn-secondary" onClick={onBack}>
+        &larr; Back
+      </button>
+      <h2>Reorder Experiences</h2>
+      <p className="admin-subtext">
+        Top item appears first on the Experience page.
+      </p>
+
+      <div className="admin-reorder-list">
+        {items.map((item, i) => (
+          <div key={item.id} className="admin-reorder-item">
+            <span className="admin-reorder-num">{i + 1}</span>
+            <span className="admin-reorder-title">{item.title}</span>
+            <div className="admin-reorder-arrows">
+              <button
+                className="admin-btn-sm"
+                onClick={() => moveUp(i)}
+                disabled={i === 0}
+              >
+                ↑
+              </button>
+              <button
+                className="admin-btn-sm"
+                onClick={() => moveDown(i)}
+                disabled={i === items.length - 1}
+              >
+                ↓
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <button className="admin-btn" onClick={handleSave} disabled={saving}>
+        {saving ? "Saving..." : "Save Order"}
+      </button>
+    </div>
+  );
+}
+
+// ─── Contact View ───────────────────────────────────────────
+function ContactView() {
+  const [form, setForm] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [savedAt, setSavedAt] = useState(null);
+
+  useEffect(() => {
+    fetch("/api/admin/contact")
+      .then((res) => res.json())
+      .then((data) => {
+        setForm(data);
+        setLoading(false);
+      });
+  }, []);
+
+  async function handleSave() {
+    setSaving(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/contact", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Save failed");
+      }
+      setSavedAt(new Date());
+    } catch (err) {
+      setError(err.message);
+    }
+    setSaving(false);
+  }
+
+  if (loading || !form) {
+    return (
+      <div className="admin-section">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="admin-section">
+      <h1>Contact</h1>
+      <p className="admin-subtext">
+        Edit the body text shown on the Contact page. The "Contact Me" heading
+        is fixed.
+      </p>
+
+      <div className="admin-form">
+        <label>
+          Body
+          <textarea
+            rows={4}
+            value={form.body ?? ""}
+            onChange={(e) => setForm({ ...form, body: e.target.value })}
+          />
+        </label>
+
+        {error && <p className="admin-error">{error}</p>}
+
+        <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <button className="admin-btn" onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save"}
+          </button>
+          {savedAt && (
+            <span className="admin-subtext">
+              Saved {savedAt.toLocaleTimeString()}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Reorder Projects View ──────────────────────────────────
 function ReorderView({ onBack }) {
   const [items, setItems] = useState([]);
@@ -797,9 +1347,39 @@ function ReorderView({ onBack }) {
   );
 }
 
+// ─── Sidebar ────────────────────────────────────────────────
+function AdminSidebar({ section, onNavigate }) {
+  const items = [
+    { key: "projects", label: "Projects" },
+    { key: "about", label: "About" },
+    { key: "experience", label: "Experience" },
+    { key: "resume", label: "Resume" },
+    { key: "contact", label: "Contact" },
+  ];
+  return (
+    <nav className="admin-sidebar">
+      {items.map((item) => (
+        <button
+          key={item.key}
+          className={
+            "admin-sidebar-item" +
+            (section === item.key ? " admin-sidebar-item-active" : "")
+          }
+          onClick={() => onNavigate(item.key)}
+        >
+          {item.label}
+        </button>
+      ))}
+    </nav>
+  );
+}
+
 // ─── Main Admin Page ────────────────────────────────────────
 export default function AdminPage() {
-  const [view, setView] = useState("login"); // login | dashboard | add | edit | reorder | logs
+  const [view, setView] = useState("login");
+  // Views: login | dashboard | add | edit | reorder | logs | resume | about | contact
+  // Experience views: exp_list | exp_add | exp_edit | exp_reorder
+  const [editExperience, setEditExperience] = useState(null);
   const [editProject, setEditProject] = useState(null);
   const [logsProject, setLogsProject] = useState(null);
   const [addGithubUrl, setAddGithubUrl] = useState("");
@@ -817,53 +1397,108 @@ export default function AdminPage() {
     return <LoginView onLogin={() => setView("dashboard")} />;
   }
 
+  // Top-level section shown by the sidebar; subviews share their parent section
+  const section = view === "resume"
+    ? "resume"
+    : view === "about"
+    ? "about"
+    : view === "contact"
+    ? "contact"
+    : view.startsWith("exp_")
+    ? "experience"
+    : "projects";
+
+  function handleNavigate(next) {
+    if (next === "resume") setView("resume");
+    else if (next === "about") setView("about");
+    else if (next === "contact") setView("contact");
+    else if (next === "experience") setView("exp_list");
+    else setView("dashboard");
+  }
+
+  let content;
   if (view === "add") {
-    return (
+    content = (
       <AddProjectView
         initialGithubUrl={addGithubUrl}
         onBack={() => setView("dashboard")}
         onSaved={() => setView("dashboard")}
       />
     );
-  }
-
-  if (view === "logs" && logsProject) {
-    return <LogsView project={logsProject} onBack={() => setView("dashboard")} />;
-  }
-
-  if (view === "reorder") {
-    return <ReorderView onBack={() => setView("dashboard")} />;
-  }
-
-  if (view === "edit" && editProject) {
-    return (
+  } else if (view === "logs" && logsProject) {
+    content = <LogsView project={logsProject} onBack={() => setView("dashboard")} />;
+  } else if (view === "reorder") {
+    content = <ReorderView onBack={() => setView("dashboard")} />;
+  } else if (view === "edit" && editProject) {
+    content = (
       <EditProjectView
         project={editProject}
         onBack={() => setView("dashboard")}
         onSaved={() => setView("dashboard")}
       />
     );
+  } else if (view === "resume") {
+    content = <ResumeView />;
+  } else if (view === "about") {
+    content = <AboutView />;
+  } else if (view === "contact") {
+    content = <ContactView />;
+  } else if (view === "exp_list") {
+    content = (
+      <ExperienceListView
+        onAdd={() => setView("exp_add")}
+        onEdit={(item) => {
+          setEditExperience(item);
+          setView("exp_edit");
+        }}
+        onReorder={() => setView("exp_reorder")}
+      />
+    );
+  } else if (view === "exp_add") {
+    content = (
+      <ExperienceFormView
+        onBack={() => setView("exp_list")}
+        onSaved={() => setView("exp_list")}
+      />
+    );
+  } else if (view === "exp_edit" && editExperience) {
+    content = (
+      <ExperienceFormView
+        initial={editExperience}
+        onBack={() => setView("exp_list")}
+        onSaved={() => setView("exp_list")}
+      />
+    );
+  } else if (view === "exp_reorder") {
+    content = <ExperienceReorderView onBack={() => setView("exp_list")} />;
+  } else {
+    content = (
+      <DashboardView
+        onAddProject={(githubUrl) => {
+          setAddGithubUrl(githubUrl || "");
+          setView("add");
+        }}
+        onReorder={() => setView("reorder")}
+        onViewLogs={(p) => {
+          setLogsProject(p);
+          setView("logs");
+        }}
+        onRenew={(p) => {
+          setEditProject(p);
+          setView("edit");
+        }}
+        onEditProject={(p) => {
+          setEditProject(p);
+          setView("edit");
+        }}
+      />
+    );
   }
 
   return (
-    <DashboardView
-      onAddProject={(githubUrl) => {
-        setAddGithubUrl(githubUrl || "");
-        setView("add");
-      }}
-      onReorder={() => setView("reorder")}
-      onViewLogs={(p) => {
-        setLogsProject(p);
-        setView("logs");
-      }}
-      onRenew={(p) => {
-        setEditProject(p);
-        setView("edit");
-      }}
-      onEditProject={(p) => {
-        setEditProject(p);
-        setView("edit");
-      }}
-    />
+    <div className="admin-shell">
+      <AdminSidebar section={section} onNavigate={handleNavigate} />
+      <div className="admin-content">{content}</div>
+    </div>
   );
 }
